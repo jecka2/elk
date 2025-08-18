@@ -1,0 +1,55 @@
+---
+- name: install  & config Docker
+  hosts: web
+  vars_files: 
+   - secrets.yml
+  become: true
+  tasks: 
+      
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Start Nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started 
+
+    - name: Copy  flise for custom image to /tmp/remote_destination'
+      ansible.builtin.copy:
+        src: ./docker
+        dest: /tmp
+
+    - name: Build Custom Image
+      community.docker.docker_image_build:
+        name: myapp:latest
+        path: /tmp/docker
+        dockerfile: Dockerfile
+
+    - name: Запуск Docker-контейнера  
+      community.docker.docker_container:  
+        name: myapp  
+        image: "{{ local_image_name }}"
+        state: started  
+        ports:
+          - "8080:80"
+   
+    - name: Login to Docker Hub
+      community.docker.docker_login:
+        username: "{{ docker_username }}"
+        password: "{{ docker_password }}"
+
+    - name: Tag local Docker image for Docker Hub
+      command: >
+        docker tag {{ local_image_name }} {{ docker_hub_repo }}:{{ version }}
+
+    - name: Push Docker image to Docker Hub
+      community.docker.docker_image_push:
+        name: "{{ docker_hub_repo }}"
+        tag: "{{ version }}"
+...
