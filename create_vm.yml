@@ -6,12 +6,12 @@
   vars:
    vms_ip_addresses:
    - ip_address: "192.168.1.101"
-   - ip_address: "192.168.1.102"
-   - ip_address: "192.168.1.103"
+#   - ip_address: "192.168.1.102"
+#   - ip_address: "192.168.1.103"
    vms_names:
    - name: web
-   - name: log
-   - name: elk
+#   - name: log
+#   - name: elk
 
   tasks:
     - name: Install python
@@ -42,13 +42,12 @@
         api_token_id: "{{ proxmox_token }}"
         api_token_secret: "{{ proxmox_token_secret }}"
         validate_certs: false
-        clone: "init"
+        clone: "image"
         name: "{{ item.0.name }}"
         net:
-         net0: 'virtio,bridge=vmbr1,tag=77'
+         net0: 'virtio,bridge=vmbr1'
         ipconfig:
            ipconfig0: '{{item.1.ip_address}}'
-        state: started
         force: true
         storage: "homelab"
         timeout: 300
