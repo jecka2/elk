@@ -1,29 +1,39 @@
 ---
-- name: Creeate vms on Proxmox
+- name: Create vms on Proxmox
   hosts: Proxmox
   vars_files:
     - secrets.yml
+  vars:
+   vms_ip_addresses:
+   - ip_address: "192.168.1.101"
+   - ip_address: "192.168.1.102"
+   - ip_address: "192.168.1.103"
+   vms_names:
+   - name: web
+   - name: log
+   - name: elk
+
   tasks:
     - name: Install python
       ansible.builtin.apt:
         name: python3-pip
         state: present
-        
+
     - name: INstall pip modules
       ansible.builtin.apt:
-        name:  python3-setuptools
-        state: present
-    
+       name:  python3-setuptools
+       state: present
+
     - name: Install pip modules 
       ansible.builtin.apt:
         name: python3-requests
         state: present
 
-    - name: Install pip modules 
+    - name: Install pip modules
       ansible.builtin.apt:
         name: python3-proxmoxer
         state: present
-        
+
     - name: clone KVM VM 1 from template
       community.general.proxmox_kvm:
         node: "pve"  # Узел кластера (можно указать all)
@@ -33,29 +43,26 @@
         api_token_secret: "{{ proxmox_token_secret }}"
         validate_certs: false
         clone: "init"
-        name: "{{item.name_of_vm}}"
-        state: present
-        force: yes
+        name: "{{ item.0.name }}"
+        net:
+         net0: 'virtio,bridge=vmbr1,tag=77'
+        ipconfig:
+           ipconfig0: '{{item.1.ip_address}}'
+        state: started
+        force: true
         storage: "homelab"
         timeout: 300
-      loop:
-         - { name_of_vm: "elk" }
-         - { name_of_vm:  "web" }
-         - { name_of_vm:  "log" }
+      loop: "{{ vms_names | zip(vms_ip_addresses) }}"
+
 
     - name: Start VM
       community.general.proxmox_kvm:
-       api_host: "{{ proxmox_host }}"
-       api_user: "{{ proxmox_user }}"
-       api_token_id: "{{ proxmox_token }}"
-       api_token_secret: "{{ proxmox_token_secret }}"
-       name: "{{item.name_of_vm}}"
-       node: "proxmox"
-       state: started
-      loop:
-         - { name_of_vm: "elk" }
-         - { name_of_vm:  "web" }
-         - { name_of_vm:  "log" } 
-
-   
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        name: "web"
+        node: "pve"
+        state: started      
+      
 ...

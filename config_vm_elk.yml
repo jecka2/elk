@@ -1,61 +1,76 @@
 ---
-- name: install  & config Docker
-  hosts: Homelab
-  vars_files: 
+- name: Install  & config Docker
+  hosts: elk
+  vars_files:
    - secrets.yml
   become: true
-  tasks: 
+  tasks:
+
+   - name: Update apt package cache
+     ansible.builtin.apt:
+      update_cache: true
+
+   - name: Copy deb files
+     ansible.builtin.copy:
+      src: /home/jecka/elk/
+      dest: /tmp/
+
+   - name: Install elk debs
+     ansible.builtin.apt:
+      deb: "{{ item }}"
+     loop:
+     - /tmp/elasticsearch-9.1.2-amd64.deb
+     - /tmp/logstash-9.1.2-amd64.deb
+     - /tmp/kibana-9.1.2-amd64.deb
+     - /tmp/filebeat-9.1.2-amd64.deb
+
+   - name: Copy configs for elk
+     ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/log_mon/kibana.yml
+      dest: /etc/kibana/kibana.yml
+
+   - name: Copy configs for elk
+     ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/log_mon/logstash.yml
+      dest: /etc/logstash/logstash.yml
       
-    - name: Update apt package cache
-      ansible.builtin.apt:
-        update_cache: true
+   - name: Copy configs for elk
+     ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/log_mon/elasticsearch.yml
+      dest: /etc/elasticsearch/elasticsearch.yml
 
-    - name: Install nginx
-      ansible.builtin.apt:
-        name: docker-ce
-        state: present
+   - name: Copy configs for elk
+     ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/log_mon/logstash-nginx-es.conf
+      dest: /etc/logstash/conf.d/logstash-nginx-es.conf
 
-    - name: Add user to the docker group
-      ansible.builtin.user:
-        name: "{{ ansible_ssh_user }}"
-        groups: docker
-        append: true
+   - name: Copy configs for elk
+     ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/log_mon/filebeat.yml
+      dest: /etc/filebeat/filebeat.yml  
 
-    - name: Start Docker service
-      ansible.builtin.service:
-        name: docker
-        state: started 
+#   - name: Execute the command in remote shell
+#     ansible.builtin.shell: filebeat modules enable nginx
 
-    - name: Copy  flise for custom image to /tmp/remote_destination'
-      ansible.builtin.copy:
-        src: ./docker
-        dest: /tmp
 
-    - name: Build Custom Image
-      community.docker.docker_image_build:
-        name: myapp:latest
-        path: /tmp/docker
-        dockerfile: Dockerfile
+   - name: Enable service httpd, and not touch the state
+     ansible.builtin.service:
+      name: "{{ item }}"
+      enabled: true
+     loop:
+       - kibana
+       - logstash
+       - filebeat
+       - elasticsearch 
 
-    - name: Запуск Docker-контейнера  
-      community.docker.docker_container:  
-        name: myapp  
-        image: "{{ local_image_name }}"
-        state: started  
-        ports:
-          - "8080:80"
-   
-    - name: Login to Docker Hub
-      community.docker.docker_login:
-        username: "{{ docker_username }}"
-        password: "{{ docker_password }}"
-
-    - name: Tag local Docker image for Docker Hub
-      command: >
-        docker tag {{ local_image_name }} {{ docker_hub_repo }}:{{ version }}
-
-    - name: Push Docker image to Docker Hub
-      community.docker.docker_image_push:
-        name: "{{ docker_hub_repo }}"
-        tag: "{{ version }}"
+   - name: Start journaled remote service
+     ansible.builtin.service:
+       name: "{{ item }}"
+       state: 'started' 
+     loop:
+      - kibana
+      - logstash
+      - filebeat
+      - elasticsearch 
+ 
 ...

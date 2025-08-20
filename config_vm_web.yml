@@ -1,55 +1,59 @@
 ---
-- name: install  & config Docker
+- name: Install  & config Docker
   hosts: web
-  vars_files: 
+  vars_files:
    - secrets.yml
   become: true
-  tasks: 
-      
+  tasks:
+
     - name: Update apt package cache
       ansible.builtin.apt:
-        update_cache: true
+       update_cache: true
 
-    - name: Install nginx
+    - name: Install packages
       ansible.builtin.apt:
-        name: nginx
-        state: present
+       name:
+        - nginx
+        - systemd-journal-remote
+       state: present
 
-    - name: Start Nginx service
+    - name: Enable service httpd, and not touch the state
       ansible.builtin.service:
-        name: nginx
-        state: started 
+       name: "{{ item }}"
+       enabled: true
+      loop:
+        - nginx
+        - systemd-journal-upload
 
-    - name: Copy  flise for custom image to /tmp/remote_destination'
-      ansible.builtin.copy:
-        src: ./docker
-        dest: /tmp
+    - name: Start journaled remote service
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: 'started' 
+      loop:
+       - nginx
+       - systemd-journal-upload
 
-    - name: Build Custom Image
-      community.docker.docker_image_build:
-        name: myapp:latest
-        path: /tmp/docker
-        dockerfile: Dockerfile
+    - name: Добавить строку после "error_log /var/log/nginx/error.log;"
+      ansible.builtin.blockinfile:
+       path:  /etc/nginx/nginx.conf
+       insertafter: '.# Logging Settings'
+       state: present 
+       block: |-
+          error_log syslog:server=unix:/dev/log;
+          access_log syslog:server=unix:/dev/log;
 
-    - name: Запуск Docker-контейнера  
-      community.docker.docker_container:  
-        name: myapp  
-        image: "{{ local_image_name }}"
-        state: started  
-        ports:
-          - "8080:80"
-   
-    - name: Login to Docker Hub
-      community.docker.docker_login:
-        username: "{{ docker_username }}"
-        password: "{{ docker_password }}"
+    - name: Config journal remote 
+      ansible.builtin.lineinfile:  
+        path: /etc/systemd/journal-upload.conf  
+        line: 'URL=http://192.168.1.24:19532'  
+        create: true
 
-    - name: Tag local Docker image for Docker Hub
-      command: >
-        docker tag {{ local_image_name }} {{ docker_hub_repo }}:{{ version }}
+    - name: Start journaled remote service
+      ansible.builtin.service:
+       name: "{{ item }}"
+       state: 'restarted' 
+      loop: 
+        - nginx
+        - systemd-journal-upload  
 
-    - name: Push Docker image to Docker Hub
-      community.docker.docker_image_push:
-        name: "{{ docker_hub_repo }}"
-        tag: "{{ version }}"
 ...
