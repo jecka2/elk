@@ -44,5 +44,12 @@
      ansible.builtin.service:
       name: systemd-journal-remote
       state: started
+
+   - name: Copy deb files
+     ansible.builtin.copy:
+      src: /home/jecka/elk/
+      dest: /tmp/
+   
+
    
 ...

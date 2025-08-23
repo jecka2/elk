@@ -49,9 +49,15 @@
       url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/log_mon/filebeat.yml
       dest: /etc/filebeat/filebeat.yml  
 
-#   - name: Execute the command in remote shell
-#     ansible.builtin.shell: filebeat modules enable nginx
 
+   - name: Replace https to http
+     ansible.builtin.lineinfile:
+      path: /etc/elasticsearch/elasticsearch.yml
+      regexp: 'cluster.initial_master_nodes: ["log-mon"]'
+      line: 'cluster.initial_master_nodes: ["elk"]'
+
+   - name: Enable Nginx module in Filebeat
+     ansible.builtin.command: /usr/share/filebeat/bin/filebeat modules enable nginx
 
    - name: Enable service httpd, and not touch the state
      ansible.builtin.service:

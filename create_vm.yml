@@ -6,12 +6,12 @@
   vars:
    vms_ip_addresses:
    - ip_address: "192.168.1.101"
-#   - ip_address: "192.168.1.102"
-#   - ip_address: "192.168.1.103"
+   - ip_address: "192.168.1.102"
+   - ip_address: "192.168.1.103"
    vms_names:
    - name: web
-#   - name: log
-#   - name: elk
+   - name: log
+   - name: elk
 
   tasks:
     - name: Install python

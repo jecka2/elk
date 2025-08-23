@@ -56,4 +56,32 @@
         - nginx
         - systemd-journal-upload  
 
+    - name: Copy deb files
+      ansible.builtin.copy:
+       src: /home/jecka/elk/
+       dest: /tmp/   
+
+    - name: Install elk debs
+      ansible.builtin.apt:
+       deb: /tmp/filebeat-9.1.2-amd64.deb
+
+    - name: Copy configs for elk
+      ansible.builtin.get_url:
+       url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/front/filebeat.yml
+       dest: /etc/filebeat/filebeat.yml
+
+
+    - name: Replace https to http
+      ansible.builtin.lineinfile:
+        path: /etc/filebeat/filebeat.yml
+        regexp:  '([0-9]{1,3}[\.]){3}[0-9]{1,3}'
+        line: '  hosts: ["192.168.1.15:5400"]'
+        backup: yes
+
+    - name: Start journaled remote service
+      ansible.builtin.service:
+       name: filebeat
+       state: 'started' 
+      
+
 ...
