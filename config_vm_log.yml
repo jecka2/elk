@@ -25,7 +25,7 @@
       group: systemd-journal-remote
       mode: '0777'
 
-   - name: Replace https to http
+   - name: Replace https to http in journald
      ansible.builtin.lineinfile:
       path: /lib/systemd/system/systemd-journal-remote.service
       regexp: '^ExecStart=.*'
@@ -40,7 +40,7 @@
       name: systemd-journal-remote
       enabled: true
 
-   - name: Start journaled remote service
+   - name: Start journald remote service
      ansible.builtin.service:
       name: systemd-journal-remote
       state: started

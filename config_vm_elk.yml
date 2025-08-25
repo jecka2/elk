@@ -1,5 +1,5 @@
 ---
-- name: Install  & config Docker
+- name: Install  & config elk
   hosts: elk
   vars_files:
    - secrets.yml
@@ -53,11 +53,17 @@
    - name: Replace https to http
      ansible.builtin.lineinfile:
       path: /etc/elasticsearch/elasticsearch.yml
-      regexp: 'cluster.initial_master_nodes: ["log-mon"]'
+      regexp: 'cluster.initial_master_nodes: ["mon-log"]'
       line: 'cluster.initial_master_nodes: ["elk"]'
 
-   - name: Enable Nginx module in Filebeat
-     ansible.builtin.command: /usr/share/filebeat/bin/filebeat modules enable nginx
+   - name: Enable Nginx module using filebeat command
+     ansible.builtin.command:
+      cmd: filebeat modules enable nginx
+     args:
+      creates: /etc/filebeat/modules.d/nginx.yml
+
+   #- name: Enable Nginx module in Filebeat
+   #  ansible.builtin.command: "/usr/share/filebeat/bin/filebeat modules enable nginx"
 
    - name: Enable service httpd, and not touch the state
      ansible.builtin.service:
@@ -78,5 +84,4 @@
       - logstash
       - filebeat
       - elasticsearch 
- 
 ...

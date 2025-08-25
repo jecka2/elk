@@ -3,18 +3,8 @@
   hosts: Proxmox
   vars_files:
     - secrets.yml
-  vars:
-   vms_ip_addresses:
-   - ip_address: "192.168.1.101"
-   - ip_address: "192.168.1.102"
-   - ip_address: "192.168.1.103"
-   - ip_address: "192.168.1.104"
-   vms_names:
-   - name: web
-   - name: log
-   - name: elk
-   - name: test
-
+    - vars/hosts.yml 
+   
   tasks:
     - name: Install python
       ansible.builtin.apt:
@@ -44,16 +34,32 @@
         api_token_id: "{{ proxmox_token }}"
         api_token_secret: "{{ proxmox_token_secret }}"
         validate_certs: false
-        clone: "init"
-        name: "{{ item.0.name }}"
+        clone: "Ubuntu-img"
+        name: "{{ item.name }}"
+        storage: "homelab"
+        timeout: 300
+      loop: "{{ vms_to_create }}"
+
+
+    - name: Update VM configs
+      community.general.proxmox_kvm:
+        node: "pve"  # Узел кластера (можно указать all)
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user }}"
+        api_token_id: "{{ proxmox_token }}"
+        api_token_secret: "{{ proxmox_token_secret }}"
+        validate_certs: false
+        name: "{{ item.name }}"
+        memory: "{{ item.memory }}"
+        searchdomains: 'home.lan'
+        nameservers: "{{dns}}"
         net:
          net0: 'virtio,bridge=vmbr1'
         ipconfig:
-           ipconfig0: "ip={{item.1.ip_address}} gw=192.168.1.1"
-        force: true
-        storage: "homelab"
+          ipconfig0: 'ip={{item.ip_address}},gw={{gateway}}'
         timeout: 300
-      loop: "{{ vms_names | zip(vms_ip_addresses) }}"
+        update: true
+      loop: "{{ vms_to_create }}"
 
 
     - name: Start VM
@@ -65,6 +71,6 @@
         name: "{{ item.name }}"
         node: "pve"
         state: started   
-      loop: "{{ vms_names }}"   
+      loop: "{{ vms_to_create }}"   
       
 ...

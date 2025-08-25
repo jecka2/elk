@@ -1,5 +1,5 @@
 ---
-- name: Install  & config Docker
+- name: Install  & config web server
   hosts: web
   vars_files:
    - secrets.yml
@@ -48,7 +48,7 @@
     - name: Config journal remote 
       ansible.builtin.lineinfile:  
         path: /etc/systemd/journal-upload.conf  
-        line: 'URL=http://192.168.1.24:19532'  
+        line: 'URL=http://192.168.1.102:19532'  
         create: true
 
     - name: Copy deb files
@@ -65,11 +65,11 @@
        url: https://raw.githubusercontent.com/jecka2/installation/refs/heads/main/configs/front/filebeat.yml
        dest: /etc/filebeat/filebeat.yml
 
-      - name: create rule for audit
+    - name: create rule for audit
       ansible.builtin.file:
-        path: /etc/audit/rules.d/nginx.rules
-        state: touch
-        mode: '0640'
+       path: /etc/audit/rules.d/nginx.rules
+       state: touch
+       mode: '0640'
 
     - name: add rule
       ansible.builtin.lineinfile:
@@ -86,7 +86,7 @@
       ansible.builtin.lineinfile:
         path: /etc/filebeat/filebeat.yml
         regexp:  '([0-9]{1,3}[\.]){3}[0-9]{1,3}'
-        line: '  hosts: ["192.168.1.26:5400"]'
+        line: '  hosts: ["192.168.1.103:5400"]'
         backup: yes
 
     - name: Start journaled remote service
