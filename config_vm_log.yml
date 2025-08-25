@@ -42,7 +42,7 @@
 
    - name: Start journald remote service
      ansible.builtin.service:
-      name: systemd-journal-remote
+      name: systemd-journal-upload
       state: started
 
    - name: Copy deb files

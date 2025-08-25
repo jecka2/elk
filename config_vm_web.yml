@@ -18,6 +18,12 @@
         - auditd
        state: present
 
+    - name: Config journal remote 
+      ansible.builtin.lineinfile:  
+        path: /etc/systemd/journal-upload.conf  
+        line: 'URL=http://192.168.1.102:19532'  
+        create: true
+        
     - name: Enable service httpd, and not touch the state
       ansible.builtin.service:
        name: "{{ item }}"
@@ -45,12 +51,7 @@
           error_log syslog:server=unix:/dev/log warn;
           access_log syslog:server=unix:/dev/log;
 
-    - name: Config journal remote 
-      ansible.builtin.lineinfile:  
-        path: /etc/systemd/journal-upload.conf  
-        line: 'URL=http://192.168.1.102:19532'  
-        create: true
-
+    
     - name: Copy deb files
       ansible.builtin.copy:
        src: /home/jecka/elk/
@@ -74,7 +75,7 @@
     - name: add rule
       ansible.builtin.lineinfile:
         path: /etc/audit/rules.d/nginx.rules
-        line: -w /etc/nginx -p wax -k nginx_mon
+        line: -w /etc/nginx/ -p wax -k nginx_mon
 
     - name: Enable audit to log to journaled
       ansible.builtin.lineinfile:
